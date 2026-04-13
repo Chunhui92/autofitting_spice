@@ -2,7 +2,7 @@
 
 ## 1. 背景与目标
 
-当前项目已有一份基于 PySpice 的 NMOS 虚拟建模脚本 [bsim4_dataset.py](/Users/dangch/Documents/new_prj/spice_automodeling/bsim4_dataset.py)，能够对给定的 `W/L` 组合生成 BSIM4 参数并仿真输出 6 项电学指标：
+当前项目已有一份基于 PySpice 的 NMOS 虚拟建模逻辑，核心实现位于 [dataset_generator.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/calibration/dataset_generator.py)，并通过兼容入口 [bsim4_dataset.py](/Users/dangch/Documents/new_prj/spice_automodeling/bsim4_dataset.py) 与脚本入口 [generate_bsim4_dataset.py](/Users/dangch/Documents/new_prj/spice_automodeling/scripts/generate_bsim4_dataset.py) 暴露运行能力，能够对给定的 `W/L` 组合生成 BSIM4 参数并仿真输出 6 项电学指标：
 
 - `idoff_a`
 - `isoff_a`
@@ -11,7 +11,7 @@
 - `idlin_a`
 - `idsat_a`
 
-当前默认目标数据已切换为加入 `5%` 扰动的 [virtual_mosfet_metrics_perturbed_5pct.csv](/Users/dangch/Documents/new_prj/spice_automodeling/virtual_mosfet_metrics_perturbed_5pct.csv)，共 42 组不同 `W/L` 组合。需要构建一个自动化校准流程，对脚本中的待校准参数做优化，使得：
+当前默认目标数据已切换为加入 `5%` 扰动的 [virtual_mosfet_metrics_perturbed_5pct.csv](/Users/dangch/Documents/new_prj/spice_automodeling/data/targets/virtual_mosfet_metrics_perturbed_5pct.csv)，共 42 组不同 `W/L` 组合。需要构建一个自动化校准流程，对脚本中的待校准参数做优化，使得：
 
 - 42 组 `W/L` 上的每一个指标相对误差都小于 `3%`
 - 校准后的参数值随 `W` 和 `L` 连续变化
@@ -21,7 +21,7 @@
 
 ## 1.1 当前实现进展
 
-截至当前版本，项目中已经落地了一条可运行的多阶段校准链路，主入口为 [run_calibration.py](/Users/dangch/Documents/new_prj/spice_automodeling/run_calibration.py)，核心实现位于 [calibration/optimizer.py](/Users/dangch/Documents/new_prj/spice_automodeling/calibration/optimizer.py)。
+截至当前版本，项目中已经落地了一条可运行的多阶段校准链路，推荐入口为 [run_calibration.py](/Users/dangch/Documents/new_prj/spice_automodeling/scripts/run_calibration.py)，兼容入口为 [run_calibration.py](/Users/dangch/Documents/new_prj/spice_automodeling/run_calibration.py)，核心实现位于 [optimizer.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/calibration/optimizer.py)。
 
 已完成的能力包括：
 
@@ -34,7 +34,7 @@
 - 误差热图、目标值对比图、参数曲面图输出
 - 单元测试覆盖核心模块
 
-当前默认输出目录为 [calibration_output](/Users/dangch/Documents/new_prj/spice_automodeling/calibration_output)，包括：
+当前默认输出目录为 [artifacts/calibration_output](/Users/dangch/Documents/new_prj/spice_automodeling/artifacts/calibration_output)，包括：
 
 - `pareto_candidates.csv`
 - `local_tuned_params.csv`
@@ -68,7 +68,7 @@
 
 ## 2. 待校准参数范围
 
-待校准参数以 [bsim4_dataset.py:153](/Users/dangch/Documents/new_prj/spice_automodeling/bsim4_dataset.py#L153) 到 [bsim4_dataset.py:166](/Users/dangch/Documents/new_prj/spice_automodeling/bsim4_dataset.py#L166) 对应的字段为准：
+待校准参数以 [dataset_generator.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/calibration/dataset_generator.py) 中 `build_model_params()` 对应的字段为准：
 
 - `toxe`
 - `vth0`

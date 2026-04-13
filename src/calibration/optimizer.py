@@ -15,6 +15,7 @@ from calibration.plotting import (
     plot_pareto_front,
     plot_target_vs_simulated,
 )
+from calibration.project_paths import CALIBRATION_OUTPUT_DIR, DEFAULT_TARGET_CSV
 from calibration.pymoo_problem import CornerObjectiveProblem, CornerProblemLayout
 from calibration.reporting import write_csv_rows, write_markdown_summary, write_pareto_candidates
 from calibration.targets import MetricTarget
@@ -159,7 +160,7 @@ def _parameter_steps() -> dict[str, float]:
 
 
 def _corner_sizes() -> list[tuple[float, float, str]]:
-    from bsim4_dataset import LENGTHS_UM, WIDTHS_UM
+    from calibration.dataset_generator import LENGTHS_UM, WIDTHS_UM
 
     w_min = float(min(WIDTHS_UM))
     w_max = float(max(WIDTHS_UM))
@@ -190,7 +191,7 @@ def _clip_model_params(model_params: dict[str, float]) -> dict[str, float]:
 
 
 def _current_model_params(w_um: float, l_um: float) -> dict[str, float]:
-    from bsim4_dataset import build_model_params
+    from calibration.dataset_generator import build_model_params
 
     built_params = build_model_params(w_um, l_um)
     return {name: built_params[name] for name in PARAMETER_NAMES}
@@ -273,7 +274,7 @@ def _select_reference_corner_vector(
 
 
 def _build_surface_models_from_corner_vector(vector: list[float]) -> dict[str, ParameterSurfaceModel]:
-    from bsim4_dataset import LENGTHS_UM, WIDTHS_UM
+    from calibration.dataset_generator import LENGTHS_UM, WIDTHS_UM
 
     layout = CornerProblemLayout()
     decoded = layout.decode(vector)
@@ -626,11 +627,13 @@ def _generate_plots(
 
 
 def run_full_calibration(
-    target_csv_path: Path = Path("virtual_mosfet_metrics_perturbed_5pct.csv"),
-    output_dir: Path = Path("calibration_output"),
+    target_csv_path: str | Path = DEFAULT_TARGET_CSV,
+    output_dir: str | Path = CALIBRATION_OUTPUT_DIR,
 ) -> int:
     from calibration.targets import MetricTargetSet
 
+    target_csv_path = Path(target_csv_path)
+    output_dir = Path(output_dir)
     targets = MetricTargetSet.from_csv(target_csv_path)
     output_dir.mkdir(parents=True, exist_ok=True)
 

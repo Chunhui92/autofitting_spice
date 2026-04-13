@@ -2,11 +2,12 @@ from pathlib import Path
 import unittest
 import tempfile
 
+from calibration.project_paths import DEFAULT_TARGET_CSV
 from calibration.targets import MetricTargetSet
 
 
 def _workspace_csv_path() -> Path:
-    return Path(__file__).resolve().parents[1] / "virtual_mosfet_metrics_perturbed_5pct.csv"
+    return DEFAULT_TARGET_CSV
 
 
 class MetricTargetSetTests(unittest.TestCase):

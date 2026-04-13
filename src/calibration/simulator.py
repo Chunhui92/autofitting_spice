@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bsim4_dataset import VDD, VLIN, configure_pyspice_runtime, simulate_transfer_measures
+from calibration.dataset_generator import VDD, VLIN, configure_pyspice_runtime, simulate_transfer_measures
 
 
 def build_simulation_model_params(model_params: dict[str, float]) -> dict[str, float]:
