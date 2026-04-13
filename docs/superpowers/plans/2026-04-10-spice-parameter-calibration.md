@@ -1,5 +1,7 @@
 # Spice 参数连续校准 Implementation Plan
 
+> Note: 这是历史实施计划文档，已按当前仓库结构同步路径与入口；其中部分“预期失败”步骤保留了当时的执行语境，主要用于追溯实施过程。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 构建一个可测试、可扩展的 PySpice 参数校准工具，对 42 组 `W/L` 目标指标进行连续参数拟合，并验证每个指标相对误差都小于 `3%`。
@@ -14,17 +16,17 @@
 
 ## File Structure
 
-- Create: `calibration/__init__.py`
-- Create: `calibration/targets.py`
-- Create: `calibration/parameter_bounds.py`
-- Create: `calibration/parameterization.py`
-- Create: `calibration/simulator.py`
-- Create: `calibration/error_metrics.py`
-- Create: `calibration/sensitivity.py`
-- Create: `calibration/optimizer.py`
-- Create: `calibration/reporting.py`
+- Create: `src/__init__.py`
+- Create: `src/targets.py`
+- Create: `src/parameter_bounds.py`
+- Create: `src/parameterization.py`
+- Create: `src/simulator.py`
+- Create: `src/error_metrics.py`
+- Create: `src/sensitivity.py`
+- Create: `src/optimizer.py`
+- Create: `src/reporting.py`
 - Create: `run_calibration.py`
-- Modify: `bsim4_dataset.py`
+- Modify: `src/dataset_generator.py`
 - Modify: `pyspice_run.md`
 - Create: `tests/test_targets.py`
 - Create: `tests/test_parameter_bounds.py`
@@ -36,9 +38,9 @@
 ### Task 1: 搭建目标数据与误差计算骨架
 
 **Files:**
-- Create: `calibration/__init__.py`
-- Create: `calibration/targets.py`
-- Create: `calibration/error_metrics.py`
+- Create: `src/__init__.py`
+- Create: `src/targets.py`
+- Create: `src/error_metrics.py`
 - Create: `tests/test_targets.py`
 - Create: `tests/test_error_metrics.py`
 
@@ -49,7 +51,7 @@
 from pathlib import Path
 import unittest
 
-from calibration.targets import MetricTargetSet
+from src.targets import MetricTargetSet
 
 
 class MetricTargetSetTests(unittest.TestCase):
@@ -69,7 +71,7 @@ class MetricTargetSetTests(unittest.TestCase):
 # tests/test_error_metrics.py
 import unittest
 
-from calibration.error_metrics import relative_error, summarize_point_errors
+from src.error_metrics import relative_error, summarize_point_errors
 
 
 class ErrorMetricTests(unittest.TestCase):
@@ -99,7 +101,7 @@ Expected: `ModuleNotFoundError: No module named 'calibration'`
 - [ ] **Step 3: 实现最小数据装载与误差计算代码**
 
 ```python
-# calibration/targets.py
+# src/targets.py
 from __future__ import annotations
 
 import csv
@@ -139,7 +141,7 @@ class MetricTargetSet:
 ```
 
 ```python
-# calibration/error_metrics.py
+# src/error_metrics.py
 from __future__ import annotations
 
 
@@ -170,9 +172,9 @@ Expected: all tests `OK`
 ### Task 2: 提取参数边界与可调参数向量
 
 **Files:**
-- Create: `calibration/parameter_bounds.py`
+- Create: `src/parameter_bounds.py`
 - Create: `tests/test_parameter_bounds.py`
-- Modify: `bsim4_dataset.py`
+- Modify: `src/dataset_generator.py`
 
 - [ ] **Step 1: 写参数范围与默认值的失败测试**
 
@@ -180,7 +182,7 @@ Expected: all tests `OK`
 # tests/test_parameter_bounds.py
 import unittest
 
-from calibration.parameter_bounds import PARAMETER_NAMES, default_parameter_guess, parameter_bounds
+from src.parameter_bounds import PARAMETER_NAMES, default_parameter_guess, parameter_bounds
 
 
 class ParameterBoundsTests(unittest.TestCase):
@@ -215,7 +217,7 @@ Expected: `ModuleNotFoundError` or import failure for `parameter_bounds`
 - [ ] **Step 3: 实现参数范围模块，并让现有脚本复用**
 
 ```python
-# calibration/parameter_bounds.py
+# src/parameter_bounds.py
 from __future__ import annotations
 
 PARAMETER_NAMES = [
@@ -249,7 +251,7 @@ def default_parameter_guess() -> dict[str, float]:
 ```
 
 ```python
-# bsim4_dataset.py
+# src/dataset_generator.py
 # 先保留原 build_model_params 的输出形式，但把 14 个参数名提取到共享模块，
 # 避免后续脚本和校准器对参数顺序理解不一致。
 ```
@@ -267,7 +269,7 @@ Expected: all tests `OK`
 ### Task 3: 实现连续参数化与角点/曲面转换
 
 **Files:**
-- Create: `calibration/parameterization.py`
+- Create: `src/parameterization.py`
 - Create: `tests/test_parameterization.py`
 
 - [ ] **Step 1: 写角点与双线性曲面转换的失败测试**
@@ -276,7 +278,7 @@ Expected: all tests `OK`
 # tests/test_parameterization.py
 import unittest
 
-from calibration.parameterization import BilinearSurfaceModel, CornerParameterSet
+from src.parameterization import BilinearSurfaceModel, CornerParameterSet
 
 
 class ParameterizationTests(unittest.TestCase):
@@ -324,7 +326,7 @@ Expected: import failure for `BilinearSurfaceModel`
 - [ ] **Step 3: 实现角点参数对象与双线性曲面**
 
 ```python
-# calibration/parameterization.py
+# src/parameterization.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -387,8 +389,8 @@ Expected: all tests `OK`
 ### Task 4: 抽取 PySpice 仿真评估接口并保留现有数据脚本兼容
 
 **Files:**
-- Create: `calibration/simulator.py`
-- Modify: `bsim4_dataset.py`
+- Create: `src/simulator.py`
+- Modify: `src/dataset_generator.py`
 - Create: `tests/test_optimizer_smoke.py`
 
 - [ ] **Step 1: 写仿真接口的冒烟测试**
@@ -397,8 +399,8 @@ Expected: all tests `OK`
 # tests/test_optimizer_smoke.py
 import unittest
 
-from calibration.parameter_bounds import default_parameter_guess
-from calibration.simulator import simulate_metrics_for_point
+from src.parameter_bounds import default_parameter_guess
+from src.simulator import simulate_metrics_for_point
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -427,7 +429,7 @@ Expected: import failure for `simulate_metrics_for_point`
 - [ ] **Step 3: 抽取现有仿真骨架到共享模块**
 
 ```python
-# calibration/simulator.py
+# src/simulator.py
 from __future__ import annotations
 
 from bsim4_dataset import configure_pyspice_runtime, simulate_transfer_measures, VDD, VLIN
@@ -449,7 +451,7 @@ def simulate_metrics_for_point(w_um: float, l_um: float, model_params: dict[str,
 ```
 
 ```python
-# bsim4_dataset.py
+# src/dataset_generator.py
 # 让 extract_metrics 继续工作，但内部尽量复用 simulator 层返回的 6 项指标，
 # 避免后续校准器与数据脚本各自维护一套仿真流程。
 ```
@@ -467,8 +469,8 @@ Expected: smoke test `OK`
 ### Task 5: 实现局部敏感性分析与 4 角点校准入口
 
 **Files:**
-- Create: `calibration/sensitivity.py`
-- Create: `calibration/optimizer.py`
+- Create: `src/sensitivity.py`
+- Create: `src/optimizer.py`
 - Create: `tests/test_sensitivity.py`
 
 - [ ] **Step 1: 写局部敏感性分析失败测试**
@@ -477,7 +479,7 @@ Expected: smoke test `OK`
 # tests/test_sensitivity.py
 import unittest
 
-from calibration.sensitivity import finite_difference_sensitivity
+from src.sensitivity import finite_difference_sensitivity
 
 
 class SensitivityTests(unittest.TestCase):
@@ -508,7 +510,7 @@ Expected: import failure for `finite_difference_sensitivity`
 - [ ] **Step 3: 实现局部敏感性函数与角点校准入口**
 
 ```python
-# calibration/sensitivity.py
+# src/sensitivity.py
 from __future__ import annotations
 
 
@@ -531,7 +533,7 @@ def finite_difference_sensitivity(
 ```
 
 ```python
-# calibration/optimizer.py
+# src/optimizer.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -566,8 +568,8 @@ Expected: all tests `OK`
 ### Task 6: 实现连续曲面初始化、42 点联合校准与报告导出
 
 **Files:**
-- Modify: `calibration/optimizer.py`
-- Create: `calibration/reporting.py`
+- Modify: `src/optimizer.py`
+- Create: `src/reporting.py`
 - Create: `run_calibration.py`
 - Modify: `pyspice_run.md`
 
@@ -575,7 +577,7 @@ Expected: all tests `OK`
 
 ```python
 # run_calibration.py
-from calibration.optimizer import run_full_calibration
+from src.optimizer import run_full_calibration
 
 
 if __name__ == "__main__":
@@ -585,7 +587,7 @@ if __name__ == "__main__":
 Run:
 
 ```bash
-python run_calibration.py
+python scripts/run_calibration.py
 ```
 
 Expected: import failure or missing `run_full_calibration`
@@ -593,7 +595,7 @@ Expected: import failure or missing `run_full_calibration`
 - [ ] **Step 2: 实现联合校准与报告导出最小闭环**
 
 ```python
-# calibration/optimizer.py
+# src/optimizer.py
 def run_full_calibration() -> int:
     # 1. 读取 42 点目标
     # 2. 运行 4 角点校准
@@ -605,7 +607,7 @@ def run_full_calibration() -> int:
 ```
 
 ```python
-# calibration/reporting.py
+# src/reporting.py
 from __future__ import annotations
 
 import csv
@@ -626,7 +628,7 @@ def write_error_report(path: Path, rows: list[dict[str, float | str]]) -> None:
 Run:
 
 ```bash
-MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python run_calibration.py
+MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python scripts/run_calibration.py
 ```
 
 Expected:
@@ -642,7 +644,7 @@ Expected:
 在 [pyspice_run.md](/Users/dangch/Documents/new_prj/spice_automodeling/pyspice_run.md) 增加以下命令说明：
 
 ```bash
-MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python /Users/dangch/Documents/new_prj/spice_automodeling/run_calibration.py
+MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python /Users/dangch/Documents/new_prj/spice_automodeling/scripts/run_calibration.py
 MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python -m unittest discover -s /Users/dangch/Documents/new_prj/spice_automodeling/tests -v
 ```
 

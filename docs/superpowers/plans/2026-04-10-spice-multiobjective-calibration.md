@@ -1,32 +1,34 @@
 # Spice Multiobjective Calibration Implementation Plan
 
+> Note: 这是历史实施计划文档，已按当前仓库结构同步路径与入口；其中部分任务描述保留了当时的执行语境，主要用于追溯实施过程。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 构建一套基于 `pymoo/NSGA-II` 的多目标 SPICE 参数校准流程，支持 4 角点优化、连续曲面初始化、逐器件局部微调、全局再拟合、最终精修，并输出 CSV 与绘图结果。
 
-**Architecture:** 在现有 `calibration` 包基础上，新增多目标问题定义、角点 Pareto 搜索、逐器件局部微调、全局再拟合和绘图模块。数据流按“目标 CSV -> 仿真评估 -> 多目标优化 -> 中间教师解 -> 全局连续模型 -> 报告与图形”推进，最终由 `run_calibration.py` 统一驱动。
+**Architecture:** 在现有 `src` 包基础上，新增多目标问题定义、角点 Pareto 搜索、逐器件局部微调、全局再拟合和绘图模块。数据流按“目标 CSV -> 仿真评估 -> 多目标优化 -> 中间教师解 -> 全局连续模型 -> 报告与图形”推进，最终由 `run_calibration.py` 统一驱动。
 
 **Tech Stack:** Python, PySpice, numpy, matplotlib, pymoo, unittest
 
 ---
 
-当前工作区不是 git 仓库，本计划不包含 `git commit` 步骤。计划默认目标文件为 `virtual_mosfet_metrics_perturbed_5pct.csv`。
+当前工作区不是 git 仓库，本计划不包含 `git commit` 步骤。计划默认目标文件为 `data/targets/virtual_mosfet_metrics_perturbed_5pct.csv`。
 
 ## File Structure
 
-- Modify: `calibration/targets.py`
-- Modify: `calibration/error_metrics.py`
-- Modify: `calibration/parameterization.py`
-- Modify: `calibration/optimizer.py`
-- Modify: `calibration/reporting.py`
-- Modify: `calibration/simulator.py`
+- Modify: `src/targets.py`
+- Modify: `src/error_metrics.py`
+- Modify: `src/parameterization.py`
+- Modify: `src/optimizer.py`
+- Modify: `src/reporting.py`
+- Modify: `src/simulator.py`
 - Modify: `run_calibration.py`
 - Modify: `pyspice_run.md`
-- Create: `calibration/objectives.py`
-- Create: `calibration/pymoo_problem.py`
-- Create: `calibration/local_tuning.py`
-- Create: `calibration/global_refit.py`
-- Create: `calibration/plotting.py`
+- Create: `src/objectives.py`
+- Create: `src/pymoo_problem.py`
+- Create: `src/local_tuning.py`
+- Create: `src/global_refit.py`
+- Create: `src/plotting.py`
 - Create: `tests/test_objectives.py`
 - Create: `tests/test_pymoo_problem.py`
 - Create: `tests/test_local_tuning.py`
@@ -36,9 +38,9 @@
 ### Task 1: 切换目标数据入口并补齐目标/误差聚合接口
 
 **Files:**
-- Modify: `calibration/targets.py`
-- Modify: `calibration/error_metrics.py`
-- Create: `calibration/objectives.py`
+- Modify: `src/targets.py`
+- Modify: `src/error_metrics.py`
+- Create: `src/objectives.py`
 - Create: `tests/test_objectives.py`
 
 - [ ] **Step 1: 写 6 目标聚合的失败测试**
@@ -47,7 +49,7 @@
 # tests/test_objectives.py
 import unittest
 
-from calibration.objectives import aggregate_metric_objectives
+from src.objectives import aggregate_metric_objectives
 
 
 class ObjectiveAggregationTests(unittest.TestCase):
@@ -70,12 +72,12 @@ Run:
 python -m unittest tests.test_objectives -v
 ```
 
-Expected: import failure for `calibration.objectives`
+Expected: import failure for `src.objectives`
 
 - [ ] **Step 3: 实现目标聚合与目标文件默认路径切换**
 
 ```python
-# calibration/objectives.py
+# src/objectives.py
 from __future__ import annotations
 
 METRIC_NAMES = ["vtlin_v", "vtsat_v", "idlin_a", "idsat_a", "idoff_a", "isoff_a"]
@@ -92,13 +94,13 @@ def aggregate_metric_objectives(point_error_rows: list[dict[str, float]]) -> dic
 # run_calibration.py
 from pathlib import Path
 
-from calibration.optimizer import run_full_calibration
+from src.optimizer import run_full_calibration
 
 
 if __name__ == "__main__":
     raise SystemExit(
         run_full_calibration(
-            target_csv_path=Path("virtual_mosfet_metrics_perturbed_5pct.csv"),
+            target_csv_path=Path("data/targets/virtual_mosfet_metrics_perturbed_5pct.csv"),
         )
     )
 ```
@@ -116,9 +118,9 @@ Expected: all tests `OK`
 ### Task 2: 定义 4 角点多目标问题与 `pymoo` 接口
 
 **Files:**
-- Create: `calibration/pymoo_problem.py`
+- Create: `src/pymoo_problem.py`
 - Create: `tests/test_pymoo_problem.py`
-- Modify: `calibration/optimizer.py`
+- Modify: `src/optimizer.py`
 
 - [ ] **Step 1: 写角点问题编码/解码失败测试**
 
@@ -126,8 +128,8 @@ Expected: all tests `OK`
 # tests/test_pymoo_problem.py
 import unittest
 
-from calibration.parameter_bounds import PARAMETER_NAMES
-from calibration.pymoo_problem import CornerProblemLayout
+from src.parameter_bounds import PARAMETER_NAMES
+from src.pymoo_problem import CornerProblemLayout
 
 
 class PymooProblemTests(unittest.TestCase):
@@ -155,12 +157,12 @@ Expected: import failure for `CornerProblemLayout`
 - [ ] **Step 3: 实现角点问题布局与 `pymoo` 问题骨架**
 
 ```python
-# calibration/pymoo_problem.py
+# src/pymoo_problem.py
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from calibration.parameter_bounds import PARAMETER_NAMES, parameter_bounds
+from src.parameter_bounds import PARAMETER_NAMES, parameter_bounds
 
 
 CORNER_NAMES = ["w_min_l_min", "w_min_l_max", "w_max_l_min", "w_max_l_max"]
@@ -207,9 +209,9 @@ Expected: all tests `OK`
 ### Task 3: 实现角点 NSGA 评估与 Pareto 候选导出
 
 **Files:**
-- Modify: `calibration/optimizer.py`
-- Modify: `calibration/reporting.py`
-- Modify: `calibration/simulator.py`
+- Modify: `src/optimizer.py`
+- Modify: `src/reporting.py`
+- Modify: `src/simulator.py`
 - Create: `tests/test_optimizer_corner_nsga.py`
 
 - [ ] **Step 1: 写角点目标评估失败测试**
@@ -218,8 +220,8 @@ Expected: all tests `OK`
 # tests/test_optimizer_corner_nsga.py
 import unittest
 
-from calibration.optimizer import evaluate_corner_candidate
-from calibration.targets import MetricTarget
+from src.optimizer import evaluate_corner_candidate
+from src.targets import MetricTarget
 
 
 class CornerNsgaTests(unittest.TestCase):
@@ -253,8 +255,8 @@ Expected: import failure for `evaluate_corner_candidate`
 - [ ] **Step 3: 实现角点评估与 Pareto 结果写出接口**
 
 ```python
-# calibration/optimizer.py
-from calibration.error_metrics import summarize_point_errors
+# src/optimizer.py
+from src.error_metrics import summarize_point_errors
 
 
 def evaluate_corner_candidate(target_row, model_params, simulate_fn) -> list[float]:
@@ -271,7 +273,7 @@ def evaluate_corner_candidate(target_row, model_params, simulate_fn) -> list[flo
 ```
 
 ```python
-# calibration/reporting.py
+# src/reporting.py
 def write_pareto_candidates(path: Path, rows: list[dict[str, float | str]]) -> None:
     write_csv_rows(path, rows)
 ```
@@ -289,8 +291,8 @@ Expected: all tests `OK`
 ### Task 4: 实现连续曲面初始化与逐器件微调
 
 **Files:**
-- Create: `calibration/local_tuning.py`
-- Modify: `calibration/parameterization.py`
+- Create: `src/local_tuning.py`
+- Modify: `src/parameterization.py`
 - Create: `tests/test_local_tuning.py`
 
 - [ ] **Step 1: 写逐器件微调范围约束失败测试**
@@ -299,7 +301,7 @@ Expected: all tests `OK`
 # tests/test_local_tuning.py
 import unittest
 
-from calibration.local_tuning import bounded_local_box
+from src.local_tuning import bounded_local_box
 
 
 class LocalTuningTests(unittest.TestCase):
@@ -325,7 +327,7 @@ Expected: import failure for `bounded_local_box`
 - [ ] **Step 3: 实现局部微调搜索盒与曲面初值接口**
 
 ```python
-# calibration/local_tuning.py
+# src/local_tuning.py
 from __future__ import annotations
 
 
@@ -356,9 +358,9 @@ Expected: all tests `OK`
 ### Task 5: 实现全局再拟合与工程连续模型选择
 
 **Files:**
-- Create: `calibration/global_refit.py`
+- Create: `src/global_refit.py`
 - Create: `tests/test_global_refit.py`
-- Modify: `calibration/parameterization.py`
+- Modify: `src/parameterization.py`
 
 - [ ] **Step 1: 写全局再拟合输出形状失败测试**
 
@@ -366,7 +368,7 @@ Expected: all tests `OK`
 # tests/test_global_refit.py
 import unittest
 
-from calibration.global_refit import fit_global_parameter_plane
+from src.global_refit import fit_global_parameter_plane
 
 
 class GlobalRefitTests(unittest.TestCase):
@@ -392,7 +394,7 @@ Expected: import failure for `fit_global_parameter_plane`
 - [ ] **Step 3: 实现低阶全局再拟合入口**
 
 ```python
-# calibration/global_refit.py
+# src/global_refit.py
 from __future__ import annotations
 
 import math
@@ -426,9 +428,9 @@ Expected: all tests `OK`
 ### Task 6: 补齐绘图模块与结果图输出
 
 **Files:**
-- Create: `calibration/plotting.py`
+- Create: `src/plotting.py`
 - Create: `tests/test_plotting.py`
-- Modify: `calibration/reporting.py`
+- Modify: `src/reporting.py`
 
 - [ ] **Step 1: 写绘图输入整形失败测试**
 
@@ -436,7 +438,7 @@ Expected: all tests `OK`
 # tests/test_plotting.py
 import unittest
 
-from calibration.plotting import build_metric_grid
+from src.plotting import build_metric_grid
 
 
 class PlottingTests(unittest.TestCase):
@@ -464,7 +466,7 @@ Expected: import failure for `build_metric_grid`
 - [ ] **Step 3: 实现热图/Pareto/对比图基础绘图工具**
 
 ```python
-# calibration/plotting.py
+# src/plotting.py
 from __future__ import annotations
 
 import numpy as np
@@ -494,15 +496,15 @@ Expected: all tests `OK`
 ### Task 7: 组装完整校准主流程并验证真实运行
 
 **Files:**
-- Modify: `calibration/optimizer.py`
+- Modify: `src/optimizer.py`
 - Modify: `run_calibration.py`
 - Modify: `pyspice_run.md`
 
 - [ ] **Step 1: 将 `run_full_calibration()` 重构为五阶段流程**
 
 ```python
-# calibration/optimizer.py
-def run_full_calibration(target_csv_path: Path, output_dir: Path = Path("calibration_output")) -> int:
+# src/optimizer.py
+def run_full_calibration(target_csv_path: Path, output_dir: Path = Path("artifacts/calibration_output")) -> int:
     # 1. 读取 perturbed target CSV
     # 2. 运行 4 角点 NSGA-II，导出 pareto_candidates.csv
     # 3. 构造连续曲面初值
@@ -545,19 +547,19 @@ Expected: full suite `OK`
 Run:
 
 ```bash
-MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python run_calibration.py
+MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python scripts/run_calibration.py
 ```
 
 Expected:
 
-- 读取 `virtual_mosfet_metrics_perturbed_5pct.csv`
-- 生成 `calibration_output/pareto_candidates.csv`
-- 生成 `calibration_output/local_tuned_params.csv`
-- 生成 `calibration_output/refitted_global_params.csv`
-- 生成 `calibration_output/calibrated_params.csv`
-- 生成 `calibration_output/calibrated_metrics.csv`
-- 生成 `calibration_output/calibration_error_report.csv`
-- 生成 `calibration_output/calibration_summary.md`
+- 读取 `data/targets/virtual_mosfet_metrics_perturbed_5pct.csv`
+- 生成 `artifacts/calibration_output/pareto_candidates.csv`
+- 生成 `artifacts/calibration_output/local_tuned_params.csv`
+- 生成 `artifacts/calibration_output/refitted_global_params.csv`
+- 生成 `artifacts/calibration_output/calibrated_params.csv`
+- 生成 `artifacts/calibration_output/calibrated_metrics.csv`
+- 生成 `artifacts/calibration_output/calibration_error_report.csv`
+- 生成 `artifacts/calibration_output/calibration_summary.md`
 - 生成至少 1 张 Pareto 图、6 张误差热图和参数曲面图
 
 - [ ] **Step 5: 更新运行说明**
@@ -565,14 +567,14 @@ Expected:
 在 [pyspice_run.md](/Users/dangch/Documents/new_prj/spice_automodeling/pyspice_run.md) 中明确记录：
 
 ```bash
-MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python run_calibration.py
+MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python scripts/run_calibration.py
 MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python -m unittest discover -s tests -v
 ```
 
 并注明默认目标文件为：
 
 ```text
-virtual_mosfet_metrics_perturbed_5pct.csv
+data/targets/virtual_mosfet_metrics_perturbed_5pct.csv
 ```
 
 ## Self-Review
