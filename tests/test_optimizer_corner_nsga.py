@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from optimizer import (
+from src.optimizer import (
     CORNER_OBJECTIVE_NAMES,
     _select_starting_params,
     _score_point_errors,
@@ -12,7 +12,7 @@ from optimizer import (
     evaluate_corner_set_candidate,
     export_corner_pareto_candidates,
 )
-from targets import MetricTarget
+from src.targets import MetricTarget
 
 
 class ReorderedTarget:

@@ -2,8 +2,8 @@ from pathlib import Path
 import unittest
 import tempfile
 
-from project_paths import DEFAULT_TARGET_CSV
-from targets import MetricTargetSet
+from src.project_paths import DEFAULT_TARGET_CSV
+from src.targets import MetricTargetSet
 
 
 def _workspace_csv_path() -> Path:

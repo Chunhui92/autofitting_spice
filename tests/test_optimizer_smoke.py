@@ -1,7 +1,7 @@
 import unittest
 
-from parameter_bounds import default_parameter_guess
-from simulator import simulate_metrics_for_point
+from src.parameter_bounds import default_parameter_guess
+from src.simulator import simulate_metrics_for_point
 
 
 class SimulatorSmokeTests(unittest.TestCase):

@@ -2,13 +2,13 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from plotting import (
+from src.plotting import (
     build_metric_grid,
     plot_error_heatmap,
     plot_pareto_front,
     plot_target_vs_simulated,
 )
-from reporting import write_calibration_plots
+from src.reporting import write_calibration_plots
 
 
 class PlottingTests(unittest.TestCase):

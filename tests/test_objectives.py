@@ -1,6 +1,6 @@
 import unittest
 
-from objectives import aggregate_metric_objectives
+from src.objectives import aggregate_metric_objectives
 
 
 class ObjectiveAggregationTests(unittest.TestCase):

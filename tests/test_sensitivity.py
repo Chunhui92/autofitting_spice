@@ -1,6 +1,6 @@
 import unittest
 
-from sensitivity import finite_difference_sensitivity
+from src.sensitivity import finite_difference_sensitivity
 
 
 class SensitivityTests(unittest.TestCase):

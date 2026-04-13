@@ -1,6 +1,6 @@
 import unittest
 
-from local_tuning import bounded_local_box
+from src.local_tuning import bounded_local_box
 
 
 class LocalTuningTests(unittest.TestCase):

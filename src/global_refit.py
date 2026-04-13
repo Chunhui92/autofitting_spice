@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 
-from parameterization import ParameterSurfaceModel
+from .parameterization import ParameterSurfaceModel
 
 
 @dataclass(frozen=True)

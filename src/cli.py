@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 
-from project_paths import CALIBRATION_OUTPUT_DIR, DATASET_OUTPUT_DIR, DEFAULT_TARGET_CSV
+from .project_paths import CALIBRATION_OUTPUT_DIR, DATASET_OUTPUT_DIR, DEFAULT_TARGET_CSV
 
 
 def main_run_calibration() -> int:
@@ -18,7 +18,7 @@ def main_run_calibration() -> int:
         help="Directory for calibration artifacts.",
     )
     args = parser.parse_args()
-    from optimizer import run_full_calibration
+    from .optimizer import run_full_calibration
 
     return run_full_calibration(target_csv_path=args.target_csv, output_dir=args.output_dir)
 
@@ -31,7 +31,7 @@ def main_generate_dataset() -> int:
         help="Directory for generated dataset artifacts.",
     )
     args = parser.parse_args()
-    from dataset_generator import main as generate_dataset
+    from .dataset_generator import main as generate_dataset
 
     generate_dataset(output_dir=args.output_dir)
     return 0

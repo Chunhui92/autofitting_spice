@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from plotting import (
+from .plotting import (
     plot_error_heatmap,
     plot_parameter_surface,
     plot_pareto_front,

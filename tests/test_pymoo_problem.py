@@ -1,8 +1,8 @@
 import unittest
 
-from parameter_bounds import PARAMETER_NAMES
-from parameter_bounds import parameter_bounds
-from pymoo_problem import CornerObjectiveProblem, CornerProblemLayout
+from src.parameter_bounds import PARAMETER_NAMES
+from src.parameter_bounds import parameter_bounds
+from src.pymoo_problem import CornerObjectiveProblem, CornerProblemLayout
 
 
 class PymooProblemTests(unittest.TestCase):

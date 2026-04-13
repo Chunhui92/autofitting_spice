@@ -4,7 +4,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-from error_metrics import METRIC_NAMES
+from .error_metrics import METRIC_NAMES
 
 
 @dataclass(frozen=True)
