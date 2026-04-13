@@ -2,7 +2,7 @@
 
 ## 1. 背景与目标
 
-当前项目已有一份基于 PySpice 的 NMOS 虚拟建模逻辑，核心实现位于 [dataset_generator.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/calibration/dataset_generator.py)，并通过兼容入口 [bsim4_dataset.py](/Users/dangch/Documents/new_prj/spice_automodeling/bsim4_dataset.py) 与脚本入口 [generate_bsim4_dataset.py](/Users/dangch/Documents/new_prj/spice_automodeling/scripts/generate_bsim4_dataset.py) 暴露运行能力，能够对给定的 `W/L` 组合生成 BSIM4 参数并仿真输出 6 项电学指标：
+当前项目已有一份基于 PySpice 的 NMOS 虚拟建模逻辑，核心实现位于 [dataset_generator.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/dataset_generator.py)，并通过兼容入口 [bsim4_dataset.py](/Users/dangch/Documents/new_prj/spice_automodeling/bsim4_dataset.py) 与脚本入口 [generate_bsim4_dataset.py](/Users/dangch/Documents/new_prj/spice_automodeling/scripts/generate_bsim4_dataset.py) 暴露运行能力，能够对给定的 `W/L` 组合生成 BSIM4 参数并仿真输出 6 项电学指标：
 
 - `idoff_a`
 - `isoff_a`
@@ -21,7 +21,7 @@
 
 ## 1.1 当前实现进展
 
-截至当前版本，项目中已经落地了一条可运行的多阶段校准链路，推荐入口为 [run_calibration.py](/Users/dangch/Documents/new_prj/spice_automodeling/scripts/run_calibration.py)，兼容入口为 [run_calibration.py](/Users/dangch/Documents/new_prj/spice_automodeling/run_calibration.py)，核心实现位于 [optimizer.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/calibration/optimizer.py)。
+截至当前版本，项目中已经落地了一条可运行的多阶段校准链路，推荐入口为 [run_calibration.py](/Users/dangch/Documents/new_prj/spice_automodeling/scripts/run_calibration.py)，兼容入口为 [run_calibration.py](/Users/dangch/Documents/new_prj/spice_automodeling/run_calibration.py)，核心实现位于 [optimizer.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/optimizer.py)。
 
 已完成的能力包括：
 
@@ -68,7 +68,7 @@
 
 ## 2. 待校准参数范围
 
-待校准参数以 [dataset_generator.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/calibration/dataset_generator.py) 中 `build_model_params()` 对应的字段为准：
+待校准参数以 [dataset_generator.py](/Users/dangch/Documents/new_prj/spice_automodeling/src/dataset_generator.py) 中 `build_model_params()` 对应的字段为准：
 
 - `toxe`
 - `vth0`

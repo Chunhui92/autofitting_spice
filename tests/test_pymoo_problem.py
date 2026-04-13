@@ -1,8 +1,8 @@
 import unittest
 
-from calibration.parameter_bounds import PARAMETER_NAMES
-from calibration.parameter_bounds import parameter_bounds
-from calibration.pymoo_problem import CornerObjectiveProblem, CornerProblemLayout
+from parameter_bounds import PARAMETER_NAMES
+from parameter_bounds import parameter_bounds
+from pymoo_problem import CornerObjectiveProblem, CornerProblemLayout
 
 
 class PymooProblemTests(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 
-from calibration.local_tuning import bounded_local_box
+from local_tuning import bounded_local_box
 
 
 class LocalTuningTests(unittest.TestCase):

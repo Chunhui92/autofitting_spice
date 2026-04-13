@@ -1,6 +1,6 @@
 import unittest
 
-from calibration.parameter_bounds import PARAMETER_NAMES, default_parameter_guess, parameter_bounds
+from parameter_bounds import PARAMETER_NAMES, default_parameter_guess, parameter_bounds
 
 
 class ParameterBoundsTests(unittest.TestCase):

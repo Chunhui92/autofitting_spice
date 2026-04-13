@@ -1,7 +1,7 @@
 import unittest
 
-from calibration.parameter_bounds import default_parameter_guess
-from calibration.simulator import simulate_metrics_for_point
+from parameter_bounds import default_parameter_guess
+from simulator import simulate_metrics_for_point
 
 
 class SimulatorSmokeTests(unittest.TestCase):

@@ -8,7 +8,7 @@ SRC_DIR = ROOT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from calibration.cli import main_run_calibration
+from cli import main_run_calibration
 
 
 if __name__ == "__main__":

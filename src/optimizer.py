@@ -3,22 +3,22 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from calibration.error_metrics import summarize_point_errors
-from calibration.global_refit import fit_global_parameter_plane
-from calibration.local_tuning import bounded_local_box
-from calibration.objectives import aggregate_metric_objectives
-from calibration.parameter_bounds import PARAMETER_NAMES, parameter_bounds
-from calibration.parameterization import BilinearSurfaceModel, CornerParameterSet, ParameterSurfaceModel
-from calibration.plotting import (
+from error_metrics import summarize_point_errors
+from global_refit import fit_global_parameter_plane
+from local_tuning import bounded_local_box
+from objectives import aggregate_metric_objectives
+from parameter_bounds import PARAMETER_NAMES, parameter_bounds
+from parameterization import BilinearSurfaceModel, CornerParameterSet, ParameterSurfaceModel
+from plotting import (
     plot_error_heatmap,
     plot_parameter_surface,
     plot_pareto_front,
     plot_target_vs_simulated,
 )
-from calibration.project_paths import CALIBRATION_OUTPUT_DIR, DEFAULT_TARGET_CSV
-from calibration.pymoo_problem import CornerObjectiveProblem, CornerProblemLayout
-from calibration.reporting import write_csv_rows, write_markdown_summary, write_pareto_candidates
-from calibration.targets import MetricTarget
+from project_paths import CALIBRATION_OUTPUT_DIR, DEFAULT_TARGET_CSV
+from pymoo_problem import CornerObjectiveProblem, CornerProblemLayout
+from reporting import write_csv_rows, write_markdown_summary, write_pareto_candidates
+from targets import MetricTarget
 
 CORNER_OBJECTIVE_NAMES = (
     "vtlin_v",
@@ -160,7 +160,7 @@ def _parameter_steps() -> dict[str, float]:
 
 
 def _corner_sizes() -> list[tuple[float, float, str]]:
-    from calibration.dataset_generator import LENGTHS_UM, WIDTHS_UM
+    from dataset_generator import LENGTHS_UM, WIDTHS_UM
 
     w_min = float(min(WIDTHS_UM))
     w_max = float(max(WIDTHS_UM))
@@ -191,7 +191,7 @@ def _clip_model_params(model_params: dict[str, float]) -> dict[str, float]:
 
 
 def _current_model_params(w_um: float, l_um: float) -> dict[str, float]:
-    from calibration.dataset_generator import build_model_params
+    from dataset_generator import build_model_params
 
     built_params = build_model_params(w_um, l_um)
     return {name: built_params[name] for name in PARAMETER_NAMES}
@@ -209,7 +209,7 @@ def _initial_corner_vector(layout: CornerProblemLayout) -> list[float]:
 
 
 def _safe_corner_simulate(w_um: float, l_um: float, model_params: dict[str, float]) -> dict[str, float]:
-    from calibration.simulator import simulate_metrics_for_point
+    from simulator import simulate_metrics_for_point
 
     try:
         return simulate_metrics_for_point(w_um, l_um, _clip_model_params(model_params))
@@ -274,7 +274,7 @@ def _select_reference_corner_vector(
 
 
 def _build_surface_models_from_corner_vector(vector: list[float]) -> dict[str, ParameterSurfaceModel]:
-    from calibration.dataset_generator import LENGTHS_UM, WIDTHS_UM
+    from dataset_generator import LENGTHS_UM, WIDTHS_UM
 
     layout = CornerProblemLayout()
     decoded = layout.decode(vector)
@@ -309,7 +309,7 @@ def _point_summary(
     target_row: MetricTarget,
     model_params: dict[str, float],
 ) -> tuple[dict[str, float], dict[str, float | str]]:
-    from calibration.simulator import simulate_metrics_for_point
+    from simulator import simulate_metrics_for_point
 
     simulated = simulate_metrics_for_point(target_row.w_um, target_row.l_um, model_params)
     point_errors = summarize_point_errors(simulated, target_row.as_metric_dict())
@@ -382,8 +382,8 @@ def _select_focus_parameters(
 ) -> list[str]:
     import math
 
-    from calibration.sensitivity import finite_difference_sensitivity
-    from calibration.simulator import simulate_metrics_for_point
+    from sensitivity import finite_difference_sensitivity
+    from simulator import simulate_metrics_for_point
 
     base_metrics = simulate_metrics_for_point(target.w_um, target.l_um, base_params)
     focus_metrics = _focus_metric_names(point_errors)
@@ -553,8 +553,8 @@ def _collect_rows_from_surface_models(
 
 
 def _collect_sensitivity_rows() -> list[dict[str, float | str]]:
-    from calibration.sensitivity import finite_difference_sensitivity
-    from calibration.simulator import simulate_metrics_for_point
+    from sensitivity import finite_difference_sensitivity
+    from simulator import simulate_metrics_for_point
 
     rows: list[dict[str, float | str]] = []
     steps = _parameter_steps()
@@ -630,7 +630,7 @@ def run_full_calibration(
     target_csv_path: str | Path = DEFAULT_TARGET_CSV,
     output_dir: str | Path = CALIBRATION_OUTPUT_DIR,
 ) -> int:
-    from calibration.targets import MetricTargetSet
+    from targets import MetricTargetSet
 
     target_csv_path = Path(target_csv_path)
     output_dir = Path(output_dir)

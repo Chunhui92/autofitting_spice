@@ -6,7 +6,7 @@ PySpice-based BSIM4 dataset generation and multi-stage calibration workflow for 
 
 ```text
 .
-├── src/calibration/            # Core package: simulation, optimization, plotting, targets, paths
+├── src/                        # Core modules: simulation, optimization, plotting, targets, paths
 ├── scripts/                    # Preferred executable entry points
 ├── data/targets/               # Input target CSV files
 ├── artifacts/                  # Runtime-generated outputs, ignored by git
@@ -44,6 +44,6 @@ MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python -m unittest discover -s te
 
 ## Notes
 
-- Core path defaults are centralized in `src/calibration/project_paths.py`.
-- CLI entry points are centralized in `src/calibration/cli.py`.
+- Core path defaults are centralized in `src/project_paths.py`.
+- CLI entry points are centralized in `src/cli.py`.
 - The current calibration pipeline is stable and tested, but the current best worst-case relative error is still about `5.1%`, so the `<3%` target has not yet been reached.

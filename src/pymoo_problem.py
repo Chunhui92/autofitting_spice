@@ -5,7 +5,7 @@ from typing import Callable
 
 import numpy as np
 
-from calibration.parameter_bounds import PARAMETER_NAMES, parameter_bounds
+from parameter_bounds import PARAMETER_NAMES, parameter_bounds
 
 try:
     from pymoo.core.problem import Problem as PymooProblem

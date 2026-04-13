@@ -6,7 +6,7 @@
 
 ## 当前目录结构
 
-- 核心代码：[/Users/dangch/Documents/new_prj/spice_automodeling/src/calibration](/Users/dangch/Documents/new_prj/spice_automodeling/src/calibration)
+- 核心代码：[/Users/dangch/Documents/new_prj/spice_automodeling/src](/Users/dangch/Documents/new_prj/spice_automodeling/src)
 - 脚本入口：[/Users/dangch/Documents/new_prj/spice_automodeling/scripts](/Users/dangch/Documents/new_prj/spice_automodeling/scripts)
 - 目标数据：[/Users/dangch/Documents/new_prj/spice_automodeling/data/targets](/Users/dangch/Documents/new_prj/spice_automodeling/data/targets)
 - 运行产物：[/Users/dangch/Documents/new_prj/spice_automodeling/artifacts](/Users/dangch/Documents/new_prj/spice_automodeling/artifacts)

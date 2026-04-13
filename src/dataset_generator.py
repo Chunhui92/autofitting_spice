@@ -12,8 +12,8 @@ from PySpice.Spice.NgSpice.Shared import NgSpiceShared
 from PySpice.Spice.Netlist import Circuit
 from PySpice.Unit import *
 
-from calibration.parameter_bounds import PARAMETER_NAMES
-from calibration.project_paths import DATASET_OUTPUT_DIR
+from parameter_bounds import PARAMETER_NAMES
+from project_paths import DATASET_OUTPUT_DIR
 
 
 VDD = 1.8
@@ -153,7 +153,7 @@ def simulate_transfer_measures(
 def extract_metrics(w_um: float, l_um: float) -> DeviceRecord:
     model_params = build_model_params(w_um, l_um)
     model_noise = deterministic_noise("model", w_um, l_um, 0.035)
-    from calibration.simulator import simulate_metrics_for_point
+    from simulator import simulate_metrics_for_point
 
     metrics = simulate_metrics_for_point(w_um, l_um, model_params)
 

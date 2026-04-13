@@ -1,6 +1,6 @@
 import unittest
 
-from calibration.error_metrics import relative_error, summarize_point_errors
+from error_metrics import relative_error, summarize_point_errors
 
 
 class ErrorMetricTests(unittest.TestCase):

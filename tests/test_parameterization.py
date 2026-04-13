@@ -1,6 +1,6 @@
 import unittest
 
-from calibration.parameterization import BilinearSurfaceModel, CornerParameterSet
+from parameterization import BilinearSurfaceModel, CornerParameterSet
 
 
 class ParameterizationTests(unittest.TestCase):

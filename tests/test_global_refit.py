@@ -1,6 +1,6 @@
 import unittest
 
-from calibration.global_refit import fit_global_parameter_plane
+from global_refit import fit_global_parameter_plane
 
 
 class GlobalRefitTests(unittest.TestCase):

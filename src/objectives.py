@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from calibration.error_metrics import METRIC_NAMES
+from error_metrics import METRIC_NAMES
 
 
 def aggregate_metric_objectives(point_error_rows: list[dict[str, float]]) -> dict[str, float]:

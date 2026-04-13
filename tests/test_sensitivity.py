@@ -1,6 +1,6 @@
 import unittest
 
-from calibration.sensitivity import finite_difference_sensitivity
+from sensitivity import finite_difference_sensitivity
 
 
 class SensitivityTests(unittest.TestCase):

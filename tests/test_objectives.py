@@ -1,6 +1,6 @@
 import unittest
 
-from calibration.objectives import aggregate_metric_objectives
+from objectives import aggregate_metric_objectives
 
 
 class ObjectiveAggregationTests(unittest.TestCase):

@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from calibration.optimizer import (
+from optimizer import (
     CORNER_OBJECTIVE_NAMES,
     _select_starting_params,
     _score_point_errors,
@@ -12,7 +12,7 @@ from calibration.optimizer import (
     evaluate_corner_set_candidate,
     export_corner_pareto_candidates,
 )
-from calibration.targets import MetricTarget
+from targets import MetricTarget
 
 
 class ReorderedTarget:
@@ -195,9 +195,9 @@ class CornerNsgaTests(unittest.TestCase):
         }
 
         with (
-            patch("calibration.optimizer._candidate_starting_params", return_value=[baseline, surface, blended]),
+            patch("src.optimizer._candidate_starting_params", return_value=[baseline, surface, blended]),
             patch(
-                "calibration.optimizer._point_summary",
+                "src.optimizer._point_summary",
                 side_effect=lambda _target, params: ({}, score_map[id(params)]),
             ),
         ):
