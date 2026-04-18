@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from src.optimizer import (
+    CalibrationStrategy,
     CORNER_OBJECTIVE_NAMES,
     _select_starting_params,
     _score_point_errors,
@@ -35,7 +36,7 @@ class CornerNsgaTests(unittest.TestCase):
             "worst_relative_error": 0.06,
         }
 
-        score = _score_point_errors(point_errors)
+        score = _score_point_errors(point_errors, CalibrationStrategy(leakage_metric_weight=1.0))
 
         self.assertAlmostEqual(score, 0.06 + 0.1 * (0.01 + 0.02 + 0.03 + 0.04 + 0.05 + 0.06) / 6.0)
 

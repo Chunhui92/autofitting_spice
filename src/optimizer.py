@@ -54,6 +54,25 @@ class CornerCalibrationResult:
     point_errors: dict[str, float | str]
 
 
+@dataclass(frozen=True)
+class CalibrationStrategy:
+    corner_pop_size: int = 24
+    corner_generations: int = 8
+    local_maxiter: int = 36
+    local_maxfev: int = 260
+    de_maxiter: int = 20
+    de_popsize: int = 10
+    leakage_metric_weight: float = 1.0
+    leakage_focus_threshold_ratio: float = 0.8
+
+
+def _metric_weights(strategy: CalibrationStrategy) -> dict[str, float]:
+    weights = {metric_name: 1.0 for metric_name in CORNER_OBJECTIVE_NAMES}
+    weights["idoff_a"] = strategy.leakage_metric_weight
+    weights["isoff_a"] = strategy.leakage_metric_weight
+    return weights
+
+
 def _invoke_simulate_fn(simulate_fn, target_row: MetricTarget, model_params: dict[str, float]) -> dict[str, float]:
     if hasattr(target_row, "w_um") and hasattr(target_row, "l_um"):
         try:
@@ -224,7 +243,10 @@ def _safe_corner_simulate(w_um: float, l_um: float, model_params: dict[str, floa
         }
 
 
-def _run_corner_nsga(corner_targets: dict[str, MetricTarget]) -> tuple[list[list[float]], list[list[float]]]:
+def _run_corner_nsga(
+    corner_targets: dict[str, MetricTarget],
+    strategy: CalibrationStrategy,
+) -> tuple[list[list[float]], list[list[float]]]:
     import numpy as np
     from pymoo.algorithms.moo.nsga2 import NSGA2
     from pymoo.optimize import minimize
@@ -236,7 +258,7 @@ def _run_corner_nsga(corner_targets: dict[str, MetricTarget]) -> tuple[list[list
     lower = np.asarray(problem.xl, dtype=float)
     upper = np.asarray(problem.xu, dtype=float)
     rng = np.random.default_rng(7)
-    pop_size = 12
+    pop_size = strategy.corner_pop_size
     sampling = np.tile(baseline_vector, (pop_size, 1))
     if pop_size > 1:
         span = upper - lower
@@ -246,7 +268,7 @@ def _run_corner_nsga(corner_targets: dict[str, MetricTarget]) -> tuple[list[list
     result = minimize(
         problem,
         NSGA2(pop_size=pop_size, sampling=sampling, eliminate_duplicates=True),
-        ("n_gen", 4),
+        ("n_gen", strategy.corner_generations),
         seed=7,
         verbose=False,
     )
@@ -316,12 +338,24 @@ def _point_summary(
     return simulated, point_errors
 
 
-def _score_point_errors(point_errors: dict[str, float | str]) -> float:
-    objective_values = [float(point_errors[metric_name]) for metric_name in CORNER_OBJECTIVE_NAMES]
-    return max(objective_values) + 0.1 * sum(objective_values) / len(objective_values)
+def _score_point_errors(
+    point_errors: dict[str, float | str],
+    strategy: CalibrationStrategy | None = None,
+) -> float:
+    strategy = CalibrationStrategy() if strategy is None else strategy
+    weights = _metric_weights(strategy)
+    weighted_values = [
+        float(point_errors[metric_name]) * weights[metric_name]
+        for metric_name in CORNER_OBJECTIVE_NAMES
+    ]
+    return max(weighted_values) + 0.1 * sum(weighted_values) / len(weighted_values)
 
 
-def _focus_metric_names(point_errors: dict[str, float | str]) -> list[str]:
+def _focus_metric_names(
+    point_errors: dict[str, float | str],
+    strategy: CalibrationStrategy | None = None,
+) -> list[str]:
+    strategy = CalibrationStrategy() if strategy is None else strategy
     worst_error = float(point_errors["worst_relative_error"])
     threshold = max(worst_error * 0.8, 0.02)
     metric_names = [
@@ -329,6 +363,10 @@ def _focus_metric_names(point_errors: dict[str, float | str]) -> list[str]:
         for metric_name in CORNER_OBJECTIVE_NAMES
         if float(point_errors[metric_name]) >= threshold
     ]
+    leakage_threshold = max(worst_error * strategy.leakage_focus_threshold_ratio, 0.015)
+    for metric_name in ("idoff_a", "isoff_a"):
+        if float(point_errors[metric_name]) >= leakage_threshold and metric_name not in metric_names:
+            metric_names.append(metric_name)
     return metric_names or list(CORNER_OBJECTIVE_NAMES)
 
 
@@ -350,7 +388,9 @@ def _candidate_starting_params(
 def _select_starting_params(
     target: MetricTarget,
     surface_models: dict[str, ParameterSurfaceModel],
+    strategy: CalibrationStrategy | None = None,
 ) -> tuple[dict[str, float], float]:
+    strategy = CalibrationStrategy() if strategy is None else strategy
     best_params: dict[str, float] | None = None
     best_score = float("inf")
     best_worst_error = float("inf")
@@ -361,7 +401,7 @@ def _select_starting_params(
         except Exception:
             continue
 
-        score = _score_point_errors(point_errors)
+        score = _score_point_errors(point_errors, strategy)
         worst_error = float(point_errors["worst_relative_error"])
         if (score, worst_error) < (best_score, best_worst_error):
             best_params = candidate_params
@@ -378,15 +418,17 @@ def _select_focus_parameters(
     target: MetricTarget,
     base_params: dict[str, float],
     point_errors: dict[str, float | str],
+    strategy: CalibrationStrategy | None = None,
     top_k: int = 6,
 ) -> list[str]:
+    strategy = CalibrationStrategy() if strategy is None else strategy
     import math
 
     from .sensitivity import finite_difference_sensitivity
     from .simulator import simulate_metrics_for_point
 
     base_metrics = simulate_metrics_for_point(target.w_um, target.l_um, base_params)
-    focus_metrics = _focus_metric_names(point_errors)
+    focus_metrics = _focus_metric_names(point_errors, strategy)
     sensitivities = finite_difference_sensitivity(
         base_params=base_params,
         parameter_steps=_parameter_steps(),
@@ -419,7 +461,9 @@ def _refine_point_with_de(
     target: MetricTarget,
     base_params: dict[str, float],
     base_score: float,
+    strategy: CalibrationStrategy | None = None,
 ) -> tuple[dict[str, float], float]:
+    strategy = CalibrationStrategy() if strategy is None else strategy
     from scipy.optimize import differential_evolution
 
     try:
@@ -430,7 +474,7 @@ def _refine_point_with_de(
     if float(base_errors["worst_relative_error"]) <= 0.04:
         return base_params, base_score
 
-    focus_parameters = _select_focus_parameters(target, base_params, base_errors, top_k=6)
+    focus_parameters = _select_focus_parameters(target, base_params, base_errors, strategy, top_k=6)
     local_bounds = bounded_local_box(base_params, parameter_bounds(), relative_radius=0.15)
     search_bounds = [local_bounds[name] for name in focus_parameters]
 
@@ -441,7 +485,7 @@ def _refine_point_with_de(
         params = _clip_model_params(params)
         try:
             _simulated, point_errors = _point_summary(target, params)
-            return _score_point_errors(point_errors)
+            return _score_point_errors(point_errors, strategy)
         except Exception:
             return 1.0e6
 
@@ -449,8 +493,8 @@ def _refine_point_with_de(
         objective,
         bounds=search_bounds,
         seed=7,
-        maxiter=12,
-        popsize=6,
+        maxiter=strategy.de_maxiter,
+        popsize=strategy.de_popsize,
         polish=False,
         workers=1,
     )
@@ -467,7 +511,9 @@ def _refine_point_with_de(
 def _local_tune_target_rows(
     target_rows: list[MetricTarget],
     surface_models: dict[str, ParameterSurfaceModel],
+    strategy: CalibrationStrategy | None = None,
 ) -> list[dict[str, float]]:
+    strategy = CalibrationStrategy() if strategy is None else strategy
     import numpy as np
     from scipy.optimize import minimize
 
@@ -475,7 +521,7 @@ def _local_tune_target_rows(
     global_bounds = parameter_bounds()
 
     for target in target_rows:
-        base_params, base_score = _select_starting_params(target, surface_models)
+        base_params, base_score = _select_starting_params(target, surface_models, strategy)
         local_box = bounded_local_box(base_params, global_bounds, relative_radius=0.10)
         x0 = np.asarray([base_params[name] for name in PARAMETER_NAMES], dtype=float)
         bounds = [local_box[name] for name in PARAMETER_NAMES]
@@ -486,7 +532,7 @@ def _local_tune_target_rows(
             )
             try:
                 _simulated, point_errors = _point_summary(target, params)
-                return _score_point_errors(point_errors)
+                return _score_point_errors(point_errors, strategy)
             except Exception:
                 return 1.0e6
 
@@ -495,7 +541,12 @@ def _local_tune_target_rows(
             x0,
             method="Powell",
             bounds=bounds,
-            options={"maxiter": 20, "maxfev": 150, "xtol": 1e-4, "ftol": 1e-4},
+            options={
+                "maxiter": strategy.local_maxiter,
+                "maxfev": strategy.local_maxfev,
+                "xtol": 1e-4,
+                "ftol": 1e-4,
+            },
         )
         candidate_vector = np.asarray(result.x, dtype=float)
         candidate_score = objective(candidate_vector)
@@ -507,6 +558,7 @@ def _local_tune_target_rows(
             target=target,
             base_params=tuned_params,
             base_score=min(base_score, candidate_score),
+            strategy=strategy,
         )
         tuned_rows.append({"w_um": target.w_um, "l_um": target.l_um, **tuned_params})
 
@@ -629,23 +681,25 @@ def _generate_plots(
 def run_full_calibration(
     target_csv_path: str | Path = DEFAULT_TARGET_CSV,
     output_dir: str | Path = CALIBRATION_OUTPUT_DIR,
+    strategy: CalibrationStrategy | None = None,
 ) -> int:
     from .targets import MetricTargetSet
 
     target_csv_path = Path(target_csv_path)
     output_dir = Path(output_dir)
+    strategy = CalibrationStrategy() if strategy is None else strategy
     targets = MetricTargetSet.from_csv(target_csv_path)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     corner_targets = _build_corner_targets(targets.rows)
-    candidate_vectors, objective_rows = _run_corner_nsga(corner_targets)
+    candidate_vectors, objective_rows = _run_corner_nsga(corner_targets, strategy)
     export_corner_pareto_candidates(output_dir / "pareto_candidates.csv", candidate_vectors, objective_rows)
     pareto_rows = _pareto_rows_for_plot(objective_rows)
 
     reference_corner_vector = _select_reference_corner_vector(candidate_vectors, objective_rows)
     initial_surface_models = _build_surface_models_from_corner_vector(reference_corner_vector)
 
-    local_tuned_rows = _local_tune_target_rows(targets.rows, initial_surface_models)
+    local_tuned_rows = _local_tune_target_rows(targets.rows, initial_surface_models, strategy)
     write_csv_rows(output_dir / "local_tuned_params.csv", local_tuned_rows)
 
     refitted_surface_models = _fit_surface_models_from_rows(local_tuned_rows)

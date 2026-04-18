@@ -46,4 +46,6 @@ MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python -m unittest discover -s te
 
 - Core path defaults are centralized in `src/project_paths.py`.
 - CLI entry points are centralized in `src/cli.py`.
-- The current calibration pipeline is stable and tested, but the current best worst-case relative error is still about `5.1%`, so the `<3%` target has not yet been reached.
+- The current `conda` `spice` environment can pass the full test suite, including the PySpice-backed smoke test.
+- The current calibration pipeline is stable and runnable, but the latest checked worst-case relative error in `artifacts/calibration_output/calibration_summary.md` is still about `5.10%`, so the `<3%` target has not yet been reached.
+- Current dominant errors are still led by leakage-related metrics, especially `idoff_a` and `isoff_a`.
