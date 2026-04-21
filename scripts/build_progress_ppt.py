@@ -50,6 +50,34 @@ def _read_csv_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(fh))
 
 
+def _compute_code_stats(root_dir: Path) -> tuple[list[dict[str, int | str]], list[dict[str, int | str]], int, int]:
+    groups = [
+        ("src", root_dir / "src"),
+        ("scripts", root_dir / "scripts"),
+        ("tests", root_dir / "tests"),
+    ]
+    group_rows: list[dict[str, int | str]] = []
+    file_rows: list[dict[str, int | str]] = []
+    total_lines = 0
+    total_files = 0
+
+    for label, directory in groups:
+        group_files = 0
+        group_lines = 0
+        if directory.exists():
+            for path in sorted(directory.rglob("*.py")):
+                line_count = len(path.read_text(encoding="utf-8").splitlines())
+                group_files += 1
+                group_lines += line_count
+                file_rows.append({"path": str(path.relative_to(root_dir)), "line_count": line_count})
+        group_rows.append({"label": label, "file_count": group_files, "line_count": group_lines})
+        total_files += group_files
+        total_lines += group_lines
+
+    top_files = sorted(file_rows, key=lambda row: int(row["line_count"]), reverse=True)[:6]
+    return group_rows, top_files, total_files, total_lines
+
+
 def _worst_metric_rows(error_rows: list[dict[str, str]]) -> list[dict[str, float | str]]:
     best_by_metric: dict[str, dict[str, float | str]] = {}
     for row in error_rows:
@@ -205,6 +233,7 @@ def build_presentation(output_path: Path, calibration_dir: Path) -> None:
 
     summary = _read_markdown_summary(calibration_dir / "calibration_summary.md")
     error_rows = _read_csv_rows(calibration_dir / "calibration_error_report.csv")
+    code_groups, top_code_files, total_code_files, total_code_lines = _compute_code_stats(ROOT_DIR)
     worst_by_metric = _worst_metric_rows(error_rows)
     top_rows = _top_error_rows(error_rows, top_n=6)
     worst_relative_error = float(summary["worst_relative_error"])
@@ -252,28 +281,58 @@ def build_presentation(output_path: Path, calibration_dir: Path) -> None:
 
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_full_background(slide, BODY_BG)
-    _add_text(slide, "2. 当前校准 pipeline", 0.72, 0.44, 3.8, 0.48, 24, TEXT_DARK, bold=True)
+    _add_text(slide, "2. 整体技术方案", 0.72, 0.44, 3.8, 0.48, 24, TEXT_DARK, bold=True)
     _add_bullets(
         slide,
         [
-            "目标数据按 W/L 尺寸索引，形成 42 个训练点。",
-            "4 角点多目标优化负责找出一组可行角点参数。",
-            "从角点构造连续参数曲面，为所有尺寸生成初始化参数。",
-            "逐器件进行 bounded Powell + DE 的局部精修，提升教师解质量。",
-            "基于局部教师解重新拟合全局连续模型，输出 calibrated params / metrics / plots。",
+            "输入层：读取 42 个 W/L 训练点目标数据，并基于参数边界定义可搜索空间。",
+            "建模层：用 4 角点参数编码尺寸依赖，再通过双线性曲面把角点扩展到整个 W/L 域。",
+            "优化层：先做 NSGA-II 多目标角点搜索，再做逐器件 bounded Powell + DE 局部微调。",
+            "泛化层：基于局部教师解执行全局 refit，形成可连续查询的参数曲面模型。",
+            "输出层：统一导出 params、metrics、error report、热图、趋势图和汇报材料。",
         ],
         0.82,
-        1.14,
-        5.45,
-        3.5,
+        1.12,
+        5.65,
+        3.28,
     )
-    _add_card(slide, "优化内核", "NSGA-II + local refinement", "角点阶段默认 pop_size=24, n_gen=8；局部阶段使用 Powell 与差分进化混合。", 0.86, 4.86, 2.92, 1.56, TITLE_ACCENT)
-    _add_card(slide, "连续模型", "Bilinear init + IDW refit", "训练点上当前 refitted_global_params 与 local_tuned_params 一致，瓶颈更多在局部教师解。", 3.98, 4.86, 3.08, 1.56, "7AC6D2")
-    _add_image_panel(slide, "漏电误差热图", calibration_dir / "error_heatmap_idoff_a.png", 7.34, 1.04, 5.28, 5.78)
+    _add_card(slide, "优化内核", "NSGA-II + local refinement", "角点阶段默认 pop_size=24, n_gen=8；局部阶段使用 Powell 与差分进化混合。", 0.86, 4.72, 2.86, 1.56, TITLE_ACCENT)
+    _add_card(slide, "连续模型", "Bilinear init + IDW refit", "训练点上当前 refitted_global_params 与 local_tuned_params 一致，瓶颈更多在局部教师解。", 3.86, 4.72, 2.86, 1.56, "7AC6D2")
+    _add_card(slide, "当前难点", "Leakage error 压降困难", "目前最难收敛的仍是 idoff_a 和 isoff_a，说明需要更聚焦的参数敏感度与预算策略。", 0.86, 6.02, 5.86, 1.0, "E07A5F")
+    _add_image_panel(slide, "技术方案示意图", calibration_dir / "pareto_front.png", 7.36, 1.04, 5.24, 5.92)
 
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_full_background(slide, BODY_BG)
-    _add_text(slide, "3. 工程化与验证状态", 0.72, 0.44, 4.0, 0.48, 24, TEXT_DARK, bold=True)
+    _add_text(slide, "3. 代码规模统计", 0.72, 0.44, 3.6, 0.48, 24, TEXT_DARK, bold=True)
+    _add_card(slide, "总代码行数", str(total_code_lines), "按 `src/`、`scripts/`、`tests/` 下全部 `.py` 文件统计。", 0.82, 1.12, 2.32, 1.48, TITLE_ACCENT)
+    _add_card(slide, "Python 文件数", str(total_code_files), "当前项目主要逻辑、入口和测试都已经模块化整理。", 3.38, 1.12, 2.32, 1.48, "7AC6D2")
+    _add_card(slide, "最大模块", "src/optimizer.py", "当前行数最多的文件，承载端到端编排和多阶段校准主流程。", 5.94, 1.12, 3.04, 1.48, "E07A5F")
+    group_lines = [
+        f"{str(row['label']):<8} files={int(row['file_count']):>2}  lines={int(row['line_count']):>4}"
+        for row in code_groups
+    ]
+    _add_table_like_lines(slide, group_lines, 0.82, 3.02, 4.44, 2.2, "目录级统计")
+    top_file_lines = [
+        f"{int(row['line_count']):>4}  {str(row['path'])}"
+        for row in top_code_files
+    ]
+    _add_table_like_lines(slide, top_file_lines, 5.48, 3.02, 4.16, 3.36, "Top 文件行数")
+    _add_bullets(
+        slide,
+        [
+            "当前代码量以 `src/` 为主，说明核心复杂度集中在校准、建模和报告生成链路。",
+            "测试代码约占总量的四分之一，说明工程已经具备较好的可验证性基础。",
+        ],
+        9.88,
+        3.08,
+        2.62,
+        2.9,
+        font_size=14,
+    )
+
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    _add_full_background(slide, BODY_BG)
+    _add_text(slide, "4. 工程化与验证状态", 0.72, 0.44, 4.0, 0.48, 24, TEXT_DARK, bold=True)
     _add_card(slide, "测试状态", "40 / 40 通过", "仓库已验证从数学层测试到 PySpice-backed smoke test 的完整链路。", 0.82, 1.18, 2.58, 1.48, SUCCESS)
     _add_card(slide, "输出闭环", "CSV + Markdown + PNG", "历史上已生成 calibration_output 与 dataset_generation 两类产物。", 3.62, 1.18, 2.5, 1.48, "7AC6D2")
     _add_card(slide, "运行入口", "scripts/run_calibration.py", "建议继续使用 scripts/ 下标准入口，而不是兼容 wrapper。", 6.34, 1.18, 3.14, 1.48, TITLE_ACCENT)
@@ -293,7 +352,7 @@ def build_presentation(output_path: Path, calibration_dir: Path) -> None:
 
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_full_background(slide, BODY_BG)
-    _add_text(slide, "4. 当前结果总览", 0.72, 0.44, 3.5, 0.48, 24, TEXT_DARK, bold=True)
+    _add_text(slide, "5. 当前结果总览", 0.72, 0.44, 3.5, 0.48, 24, TEXT_DARK, bold=True)
     _add_card(slide, "worst-case", _format_pct(worst_relative_error), "当前默认结果仍高于 3% 验收目标。", 0.82, 1.14, 2.42, 1.45, WARN)
     _add_card(slide, "最强信号", "漏电指标仍最难压", "idoff_a 和 isoff_a 继续占据 top error 列表前列。", 3.48, 1.14, 2.82, 1.45, "E07A5F")
     _add_card(slide, "建模判断", "先提局部教师解", "训练点上全局 refit 未明显拉高误差，优先级仍是局部解质量。", 6.54, 1.14, 3.1, 1.45, "7AC6D2")
@@ -306,7 +365,7 @@ def build_presentation(output_path: Path, calibration_dir: Path) -> None:
 
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_full_background(slide, BODY_BG)
-    _add_text(slide, "5. 误差热点", 0.72, 0.44, 3.2, 0.48, 24, TEXT_DARK, bold=True)
+    _add_text(slide, "6. 误差热点", 0.72, 0.44, 3.2, 0.48, 24, TEXT_DARK, bold=True)
     hotspot_lines = [
         f"{index + 1}. {row['metric_name']}  {_format_pct(float(row['relative_error']))}  @ ({float(row['w_um']):g}, {float(row['l_um']):g})"
         for index, row in enumerate(top_rows)
@@ -329,7 +388,7 @@ def build_presentation(output_path: Path, calibration_dir: Path) -> None:
 
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_full_background(slide, BODY_BG)
-    _add_text(slide, "6. 参数趋势图：随 W 变化", 0.72, 0.44, 4.6, 0.48, 24, TEXT_DARK, bold=True)
+    _add_text(slide, "7. 参数趋势图：随 W 变化", 0.72, 0.44, 4.6, 0.48, 24, TEXT_DARK, bold=True)
     _add_bullets(
         slide,
         [
@@ -345,7 +404,7 @@ def build_presentation(output_path: Path, calibration_dir: Path) -> None:
 
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_full_background(slide, BODY_BG)
-    _add_text(slide, "7. 参数趋势图：随 L 变化", 0.72, 0.44, 4.6, 0.48, 24, TEXT_DARK, bold=True)
+    _add_text(slide, "8. 参数趋势图：随 L 变化", 0.72, 0.44, 4.6, 0.48, 24, TEXT_DARK, bold=True)
     _add_bullets(
         slide,
         [
@@ -361,7 +420,7 @@ def build_presentation(output_path: Path, calibration_dir: Path) -> None:
 
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_full_background(slide, BODY_BG)
-    _add_text(slide, "8. 下一步建议", 0.72, 0.44, 3.4, 0.48, 24, TEXT_DARK, bold=True)
+    _add_text(slide, "9. 下一步建议", 0.72, 0.44, 3.4, 0.48, 24, TEXT_DARK, bold=True)
     _add_bullets(
         slide,
         [
