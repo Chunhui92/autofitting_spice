@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .plotting import (
     plot_error_heatmap,
+    plot_parameter_trend_grid,
     plot_parameter_surface,
     plot_pareto_front,
     plot_target_vs_simulated,
@@ -92,3 +93,17 @@ def write_calibration_plots(
                 parameter_rows,
                 parameter_name=parameter_name,
             )
+
+    if parameter_rows and parameter_names:
+        plot_parameter_trend_grid(
+            output_dir / "parameter_trends_vs_w.png",
+            rows=parameter_rows,
+            parameter_names=parameter_names,
+            vary_by="w",
+        )
+        plot_parameter_trend_grid(
+            output_dir / "parameter_trends_vs_l.png",
+            rows=parameter_rows,
+            parameter_names=parameter_names,
+            vary_by="l",
+        )

@@ -11,6 +11,7 @@ from .parameter_bounds import PARAMETER_NAMES, parameter_bounds
 from .parameterization import BilinearSurfaceModel, CornerParameterSet, ParameterSurfaceModel
 from .plotting import (
     plot_error_heatmap,
+    plot_parameter_trend_grid,
     plot_parameter_surface,
     plot_pareto_front,
     plot_target_vs_simulated,
@@ -676,6 +677,19 @@ def _generate_plots(
             calibrated_param_rows,
             parameter_name,
         )
+
+    plot_parameter_trend_grid(
+        output_dir / "parameter_trends_vs_w.png",
+        rows=calibrated_param_rows,
+        parameter_names=list(PARAMETER_NAMES),
+        vary_by="w",
+    )
+    plot_parameter_trend_grid(
+        output_dir / "parameter_trends_vs_l.png",
+        rows=calibrated_param_rows,
+        parameter_names=list(PARAMETER_NAMES),
+        vary_by="l",
+    )
 
 
 def run_full_calibration(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import math
 
 import matplotlib
 import numpy as np
@@ -110,5 +111,63 @@ def plot_parameter_surface(path: Path, rows: list[dict[str, float]], parameter_n
     ax.set_title(f"Parameter Surface: {parameter_name}")
     fig.colorbar(image, ax=ax, label=parameter_name)
     fig.tight_layout()
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
+
+
+def plot_parameter_trend_grid(
+    path: Path,
+    rows: list[dict[str, float]],
+    parameter_names: list[str],
+    vary_by: str,
+) -> None:
+    if vary_by not in {"w", "l"}:
+        raise ValueError("vary_by must be 'w' or 'l'")
+    if not parameter_names:
+        raise ValueError("parameter_names must not be empty")
+
+    _prepare_output_path(path)
+    ncols = 3
+    nrows = math.ceil(len(parameter_names) / ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5.2 * ncols, 3.1 * nrows), squeeze=False)
+    all_axes = axes.flatten()
+
+    x_key = "w_um" if vary_by == "w" else "l_um"
+    group_key = "l_um" if vary_by == "w" else "w_um"
+    x_label = "W (um)" if vary_by == "w" else "L (um)"
+    group_label = "L" if vary_by == "w" else "W"
+
+    for ax, parameter_name in zip(all_axes, parameter_names, strict=False):
+        group_values = sorted({float(row[group_key]) for row in rows})
+        for group_value in group_values:
+            series = sorted(
+                (row for row in rows if float(row[group_key]) == group_value),
+                key=lambda row: float(row[x_key]),
+            )
+            x_values = [float(row[x_key]) for row in series]
+            y_values = [float(row[parameter_name]) for row in series]
+            ax.plot(
+                x_values,
+                y_values,
+                marker="o",
+                linewidth=1.6,
+                markersize=3.8,
+                label=f"{group_label}={group_value:g} um",
+            )
+
+        ax.set_title(parameter_name)
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(parameter_name)
+        ax.grid(True, alpha=0.25)
+        ax.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
+        if group_values:
+            ax.legend(fontsize=7, loc="best")
+
+    for ax in all_axes[len(parameter_names):]:
+        ax.axis("off")
+
+    title_axis = "W" if vary_by == "w" else "L"
+    fig.suptitle(f"Calibrated Parameter Trends vs {title_axis}", fontsize=15, y=0.995)
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.985))
     fig.savefig(path, dpi=160)
     plt.close(fig)

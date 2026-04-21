@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 from src.plotting import (
     build_metric_grid,
     plot_error_heatmap,
+    plot_parameter_trend_grid,
     plot_pareto_front,
     plot_target_vs_simulated,
 )
@@ -54,6 +55,46 @@ class PlottingTests(unittest.TestCase):
             self.assertTrue(path.exists())
             self.assertGreater(path.stat().st_size, 0)
 
+    def test_plot_parameter_trend_grid_vs_width_writes_png(self) -> None:
+        parameter_rows = [
+            {"w_um": 0.14, "l_um": 0.028, "vth0": 0.21, "u0": 0.31},
+            {"w_um": 0.28, "l_um": 0.028, "vth0": 0.23, "u0": 0.33},
+            {"w_um": 0.14, "l_um": 0.056, "vth0": 0.25, "u0": 0.35},
+            {"w_um": 0.28, "l_um": 0.056, "vth0": 0.27, "u0": 0.37},
+        ]
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "parameter_trends_vs_w.png"
+            plot_parameter_trend_grid(
+                path,
+                rows=parameter_rows,
+                parameter_names=["vth0", "u0"],
+                vary_by="w",
+            )
+
+            self.assertTrue(path.exists())
+            self.assertGreater(path.stat().st_size, 0)
+
+    def test_plot_parameter_trend_grid_vs_length_writes_png(self) -> None:
+        parameter_rows = [
+            {"w_um": 0.14, "l_um": 0.028, "vth0": 0.21, "u0": 0.31},
+            {"w_um": 0.28, "l_um": 0.028, "vth0": 0.23, "u0": 0.33},
+            {"w_um": 0.14, "l_um": 0.056, "vth0": 0.25, "u0": 0.35},
+            {"w_um": 0.28, "l_um": 0.056, "vth0": 0.27, "u0": 0.37},
+        ]
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "parameter_trends_vs_l.png"
+            plot_parameter_trend_grid(
+                path,
+                rows=parameter_rows,
+                parameter_names=["vth0", "u0"],
+                vary_by="l",
+            )
+
+            self.assertTrue(path.exists())
+            self.assertGreater(path.stat().st_size, 0)
+
     def test_plot_target_vs_simulated_writes_png(self) -> None:
         rows = [
             {"metric_name": "vtlin_v", "target_value": 0.45, "simulated_value": 0.47},
@@ -99,3 +140,5 @@ class PlottingTests(unittest.TestCase):
             self.assertTrue((output_dir / "error_heatmap_vtlin_v.png").exists())
             self.assertTrue((output_dir / "target_vs_simulated_vtlin_v.png").exists())
             self.assertTrue((output_dir / "parameter_surface_vth0.png").exists())
+            self.assertTrue((output_dir / "parameter_trends_vs_w.png").exists())
+            self.assertTrue((output_dir / "parameter_trends_vs_l.png").exists())

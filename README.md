@@ -30,6 +30,12 @@ Run calibration:
 MPLCONFIGDIR=/tmp/mplconfig conda run --no-capture-output -n spice python scripts/run_calibration.py
 ```
 
+Build the project progress PPT:
+
+```bash
+MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python scripts/build_progress_ppt.py
+```
+
 Run all tests:
 
 ```bash
@@ -49,3 +55,4 @@ MPLCONFIGDIR=/tmp/mplconfig conda run -n spice python -m unittest discover -s te
 - The current `conda` `spice` environment can pass the full test suite, including the PySpice-backed smoke test.
 - The current calibration pipeline is stable and runnable, but the latest checked worst-case relative error in `artifacts/calibration_output/calibration_summary.md` is still about `5.10%`, so the `<3%` target has not yet been reached.
 - Current dominant errors are still led by leakage-related metrics, especially `idoff_a` and `isoff_a`.
+- Calibration plotting now includes two parameter trend overview figures: `parameter_trends_vs_w.png` and `parameter_trends_vs_l.png`.
