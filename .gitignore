@@ -2,5 +2,7 @@ __pycache__/
 *.pyc
 .DS_Store
 .vscode/
-artifacts/
+artifacts/*
+!artifacts/calibration_output/
+!artifacts/calibration_output/**
 bsim4_dataset_output/
